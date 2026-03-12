@@ -614,6 +614,14 @@ input[type="text"] { width: 150px; }
       <div class="stat-value" id="statLegs">--</div>
       <div class="stat-label">Avg Legs</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statFilled5m">--</div>
+      <div class="stat-label">Filled (5m)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statFilledVol">--</div>
+      <div class="stat-label">Filled Vol (5m)</div>
+    </div>
   </div>
 </div>
 
@@ -626,7 +634,8 @@ input[type="text"] { width: 150px; }
     <span class="filter-label">Market</span>
     <select id="filterMarket">
       <option value="all">All Markets</option>
-      <option value="nba_all" selected>All NBA</option>
+      <option value="nba_all" selected>All NBA (strict)</option>
+      <option value="nba_any_prop">Has NBA Prop</option>
       <option value="nba_props">NBA Props Only</option>
       <option value="nba_game">NBA Game Lines</option>
     </select>
@@ -773,8 +782,9 @@ function toggleDedup() {
 }
 
 function getFilters() {
-  return {
-    market: document.getElementById('filterMarket').value,
+  let market = document.getElementById('filterMarket').value;
+  const filters = {
+    market: currentStatus === 'filled' ? 'nba_any_prop' : market,
     min_legs: document.getElementById('filterMinLegs').value,
     max_legs: document.getElementById('filterMaxLegs').value,
     status: currentStatus,
@@ -782,6 +792,10 @@ function getFilters() {
     dedup: dedup ? '1' : '0',
     limit: '200',
   };
+  if (currentStatus === 'filled') {
+    filters.max_age = '5';
+  }
+  return filters;
 }
 
 function getMinDollars() {
@@ -905,6 +919,8 @@ function renderStats(stats) {
   document.getElementById('statNba').textContent = stats.nba_open.toLocaleString();
   document.getElementById('statVol').textContent = '$' + stats.total_volume.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
   document.getElementById('statLegs').textContent = stats.avg_legs.toFixed(1);
+  document.getElementById('statFilled5m').textContent = (stats.filled_5m || 0).toLocaleString();
+  document.getElementById('statFilledVol').textContent = '$' + (stats.filled_5m_vol || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
   const pp = document.getElementById('topPlayers');
   if (stats.top_players && stats.top_players.length) {

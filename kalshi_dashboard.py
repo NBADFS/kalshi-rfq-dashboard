@@ -273,6 +273,7 @@ def build_feed(params):
     search = params.get("search", [""])[0].lower()
     limit = int(params.get("limit", ["80"])[0])
     dedup = params.get("dedup", ["0"])[0] == "1"
+    max_age = int(params.get("max_age", ["0"])[0])  # minutes, 0 = no limit
 
     results = []
 
@@ -288,6 +289,13 @@ def build_feed(params):
             if e:
                 results.append(e)
 
+    # ── time filter ──
+    if max_age > 0:
+        import datetime as _dt
+        cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(minutes=max_age)
+        cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%S")
+        results = [e for e in results if e.get("created_ts", "") >= cutoff_str]
+
     # ── filters ──
     filtered = []
     for e in results:
@@ -296,14 +304,19 @@ def build_feed(params):
         if market_f != "all":
             cats = {l["cat"] for l in e["legs"]}
             has_other = "other" in cats
-            # Strict NBA-only: skip any RFQ that has non-NBA legs
-            if market_f in ("nba_props", "nba_game", "nba_all") and has_other:
+            has_nba_prop = bool(cats & PROP_CATS)
+            has_nba = bool(cats & set(CAT_MAP.values()))
+            if market_f == "nba_any_prop":
+                # At least one NBA prop leg (allows mixed sport parlays)
+                if not has_nba_prop:
+                    continue
+            elif market_f in ("nba_props", "nba_game", "nba_all") and has_other:
                 continue
-            if market_f == "nba_props" and not cats & PROP_CATS:
+            elif market_f == "nba_props" and not has_nba_prop:
                 continue
-            if market_f == "nba_game" and "game" not in cats:
+            elif market_f == "nba_game" and "game" not in cats:
                 continue
-            if market_f == "nba_all" and not any(c in CAT_MAP.values() for c in cats):
+            elif market_f == "nba_all" and not has_nba:
                 continue
         if search:
             text = " ".join(l["desc"] for l in e["legs"]).lower()
@@ -349,7 +362,9 @@ def get_single_rfq(rfq_id):
 
 
 def build_stats():
+    import datetime as _dt
     open_rfqs = get_rfqs("open")
+    closed_rfqs = get_rfqs("closed")
     nba_count = 0
     total_vol = 0.0
     total_legs = 0
@@ -360,7 +375,6 @@ def build_stats():
         legs = r.get("mve_selected_legs", [])
         if not legs:
             continue
-        # Only count pure-NBA RFQs (all legs must be KXNBA*)
         all_nba = all(l.get("market_ticker", "").startswith("KXNBA") for l in legs)
         if not all_nba:
             continue
@@ -378,6 +392,36 @@ def build_stats():
     top_players = sorted(player_counts.items(), key=lambda x: -x[1])[:12]
     top_legs = sorted(leg_dist.items(), key=lambda x: x[0])
 
+    # Filled stats (last 5 min, any RFQ with at least one NBA prop leg)
+    cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(minutes=5)
+    cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%S")
+    filled_count = 0
+    filled_vol = 0.0
+    for r in closed_rfqs:
+        if r.get("created_ts", "") < cutoff_str:
+            continue
+        legs = r.get("mve_selected_legs", [])
+        if not legs:
+            continue
+        has_nba_prop = any(
+            CAT_MAP.get(l.get("market_ticker", "").split("-")[0], "other") in PROP_CATS
+            for l in legs
+        )
+        if not has_nba_prop:
+            continue
+        mve = r.get("market_ticker", "")
+        with _cache_lock:
+            trade = _cache["trades"].get(mve)
+        if trade:
+            filled_count += 1
+            yp = float(trade.get("yes_price_dollars", "0") or "0")
+            tc = int(trade.get("count", 0) or 0)
+            target = float(r.get("target_cost_dollars", "0") or "0")
+            if target > 0:
+                filled_vol += target
+            elif tc > 0 and yp > 0:
+                filled_vol += tc * yp
+
     return {
         "total_open": len(open_rfqs),
         "nba_open": nba_count,
@@ -385,6 +429,8 @@ def build_stats():
         "avg_legs": round(total_legs / max(nba_count, 1), 1),
         "top_players": [{"name": p, "count": c} for p, c in top_players],
         "leg_distribution": [{"legs": l, "count": c} for l, c in top_legs],
+        "filled_5m": filled_count,
+        "filled_5m_vol": round(filled_vol, 2),
     }
 
 
