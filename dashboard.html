@@ -978,7 +978,7 @@ async function pollTracker() {
           trackingTimer = null;
         } else if (!trackerClosedSince) {
           trackerClosedSince = Date.now();
-        } else if (Date.now() - trackerClosedSince > 60000) {
+        } else if (Date.now() - trackerClosedSince > 20000) {
           // Give up after 60s — RFQ was cancelled/expired, not filled
           clearInterval(trackingTimer);
           trackingTimer = null;
@@ -1022,7 +1022,11 @@ function renderTrackerContent(rfq) {
   if (rfq.status === 'open') {
     watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Watching for fill...</div>';
   } else if (rfq.status === 'closed' && !rfq.fill) {
-    watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Closed — waiting for fill data...</div>';
+    if (trackerClosedSince && Date.now() - trackerClosedSince > 15000) {
+      watchHtml = '<div class="tracker-watching-bar tracker-expired">No fill — RFQ expired or was cancelled</div>';
+    } else {
+      watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Closed — waiting for fill data...</div>';
+    }
   }
 
   let fillHtml = '';
