@@ -932,11 +932,13 @@ let trackingTimer = null;
 let trackingElapsedTimer = null;
 let trackingStartTime = null;
 let trackerPrevStatus = null;
+let trackerClosedSince = null;
 
 function openTracker(rfqId) {
   trackingId = rfqId;
   trackingStartTime = Date.now();
   trackerPrevStatus = null;
+  trackerClosedSince = null;
   document.getElementById('trackerModal').classList.add('visible');
   const rfq = lastFeedData.find(r => r.id === rfqId);
   if (rfq) {
@@ -969,9 +971,18 @@ async function pollTracker() {
     const res = await fetch('/api/rfq?id=' + encodeURIComponent(trackingId));
     const data = await res.json();
     if (data && !data.error) {
-      if (trackerPrevStatus === 'open' && data.status !== 'open') {
-        clearInterval(trackingTimer);
-        trackingTimer = null;
+      // Only stop polling when we actually have fill data, or after 60s of closed-without-fill
+      if (data.status !== 'open') {
+        if (data.fill) {
+          clearInterval(trackingTimer);
+          trackingTimer = null;
+        } else if (!trackerClosedSince) {
+          trackerClosedSince = Date.now();
+        } else if (Date.now() - trackerClosedSince > 60000) {
+          // Give up after 60s — RFQ was cancelled/expired, not filled
+          clearInterval(trackingTimer);
+          trackingTimer = null;
+        }
       }
       trackerPrevStatus = data.status;
       renderTrackerContent(data);
@@ -1010,6 +1021,8 @@ function renderTrackerContent(rfq) {
   let watchHtml = '';
   if (rfq.status === 'open') {
     watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Watching for fill...</div>';
+  } else if (rfq.status === 'closed' && !rfq.fill) {
+    watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Closed — waiting for fill data...</div>';
   }
 
   let fillHtml = '';
