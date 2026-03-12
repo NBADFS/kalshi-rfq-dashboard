@@ -619,8 +619,12 @@ input[type="text"] { width: 150px; }
       <div class="stat-label">Filled (5m)</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" id="statFilledVol">--</div>
-      <div class="stat-label">Filled Vol (5m)</div>
+      <div class="stat-value" id="statUserVol" style="color:var(--amber)">--</div>
+      <div class="stat-label">User Vol (5m)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statMmVol" style="color:var(--red)">--</div>
+      <div class="stat-label">MM Exp (5m)</div>
     </div>
   </div>
 </div>
@@ -921,7 +925,8 @@ function renderStats(stats) {
   document.getElementById('statVol').textContent = '$' + stats.total_volume.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
   document.getElementById('statLegs').textContent = stats.avg_legs.toFixed(1);
   document.getElementById('statFilled5m').textContent = (stats.filled_5m || 0).toLocaleString();
-  document.getElementById('statFilledVol').textContent = '$' + (stats.filled_5m_vol || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  document.getElementById('statUserVol').textContent = '$' + (stats.filled_5m_user_vol || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  document.getElementById('statMmVol').textContent = '$' + (stats.filled_5m_mm_vol || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
   const pp = document.getElementById('topPlayers');
   if (stats.top_players && stats.top_players.length) {

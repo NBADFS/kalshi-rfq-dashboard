@@ -400,7 +400,8 @@ def build_stats():
     cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(minutes=5)
     cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%S")
     filled_count = 0
-    filled_vol = 0.0
+    filled_user_vol = 0.0
+    filled_mm_vol = 0.0
     for r in closed_rfqs:
         if r.get("created_ts", "") < cutoff_str:
             continue
@@ -420,12 +421,16 @@ def build_stats():
         if trade:
             filled_count += 1
             yp = float(trade.get("yes_price_dollars", "0") or "0")
+            np_ = float(trade.get("no_price_dollars", "0") or "0")
             tc = int(trade.get("count", 0) or 0)
             target = float(r.get("target_cost_dollars", "0") or "0")
-            if target > 0:
-                filled_vol += target
+            if target > 0 and yp > 0:
+                contracts = int(round(target / yp))
+                filled_user_vol += target
+                filled_mm_vol += contracts * np_
             elif tc > 0 and yp > 0:
-                filled_vol += tc * yp
+                filled_user_vol += tc * yp
+                filled_mm_vol += tc * np_
 
     return {
         "total_open": len(open_rfqs),
@@ -435,7 +440,8 @@ def build_stats():
         "top_players": [{"name": p, "count": c} for p, c in top_players],
         "leg_distribution": [{"legs": l, "count": c} for l, c in top_legs],
         "filled_5m": filled_count,
-        "filled_5m_vol": round(filled_vol, 2),
+        "filled_5m_user_vol": round(filled_user_vol, 2),
+        "filled_5m_mm_vol": round(filled_mm_vol, 2),
     }
 
 
