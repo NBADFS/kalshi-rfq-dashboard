@@ -873,7 +873,8 @@ function renderCard(rfq) {
       '</div>';
   }
 
-  const targetStr = rfq.target > 0 ? fmtDollar(rfq.target) : '--';
+  const displayTarget = rfq.target > 0 ? rfq.target : (rfq.fill ? rfq.fill.retail_cost : 0);
+  const targetStr = displayTarget > 0 ? fmtDollar(displayTarget) : '--';
 
   return '<div class="rfq-card status-' + statusClass + ' clickable" onclick="openTracker(\'' + rfq.id + '\')">' +
     '<div class="rfq-header">' +
@@ -1026,7 +1027,8 @@ function renderTrackerContent(rfq) {
   const body = document.getElementById('trackerBody');
   const statusClass = rfq.status === 'open' ? 'open' : rfq.status === 'filled' ? 'filled' : 'closed';
   const statusLabel = rfq.status === 'open' ? 'LIVE' : rfq.status === 'filled' ? 'FILLED' : 'CLOSED';
-  const targetStr = rfq.target > 0 ? fmtDollar(rfq.target) : '--';
+  const displayTarget = rfq.target > 0 ? rfq.target : (rfq.fill ? rfq.fill.retail_cost : 0);
+  const targetStr = displayTarget > 0 ? fmtDollar(displayTarget) : '--';
 
   let legsHtml = rfq.legs.map(l => {
     const sideClass = l.side === 'yes' ? 'side-yes' : 'side-no';
