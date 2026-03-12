@@ -203,12 +203,12 @@ def _bg_trade_fetcher():
                         continue
                 get_trade(mve)
                 checked += 1
-                if checked >= 30:
+                if checked >= 200:
                     break
-                time.sleep(0.15)
+                time.sleep(0.05)
         except Exception:
             pass
-        time.sleep(10)
+        time.sleep(5)
 
 
 # ── FEED BUILDER ─────────────────────────────────────────────────────────────
@@ -461,6 +461,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             html = f.read()
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.end_headers()
         self.wfile.write(html.encode("utf-8"))
 
