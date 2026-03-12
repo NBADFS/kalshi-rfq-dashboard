@@ -258,7 +258,11 @@ def process_rfq(r, status):
                 "retail_cost": retail_cost,
                 "mm_exposure": mm_exp,
                 "multiplier": round(1 / yp, 1) if yp > 0 else 0,
+                "trade_ts": trade.get("created_time", ""),
             }
+            # Use trade timestamp for filled RFQs (more accurate than RFQ created_ts)
+            if trade.get("created_time"):
+                entry["created_ts"] = trade["created_time"]
         else:
             entry["status"] = "closed"
 
