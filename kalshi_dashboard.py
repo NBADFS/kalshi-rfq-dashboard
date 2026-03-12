@@ -307,8 +307,8 @@ def build_feed(params):
             has_nba_prop = bool(cats & PROP_CATS)
             has_nba = bool(cats & set(CAT_MAP.values()))
             if market_f == "nba_any_prop":
-                # At least one NBA prop leg (allows mixed sport parlays)
-                if not has_nba_prop:
+                # All legs must be NBA + at least one prop leg
+                if has_other or not has_nba_prop:
                     continue
             elif market_f in ("nba_props", "nba_game", "nba_all") and has_other:
                 continue
@@ -403,11 +403,12 @@ def build_stats():
         legs = r.get("mve_selected_legs", [])
         if not legs:
             continue
+        all_nba_f = all(l.get("market_ticker", "").startswith("KXNBA") for l in legs)
         has_nba_prop = any(
             CAT_MAP.get(l.get("market_ticker", "").split("-")[0], "other") in PROP_CATS
             for l in legs
         )
-        if not has_nba_prop:
+        if not all_nba_f or not has_nba_prop:
             continue
         mve = r.get("market_ticker", "")
         with _cache_lock:
