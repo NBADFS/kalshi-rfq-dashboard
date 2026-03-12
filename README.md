@@ -4,16 +4,23 @@ Real-time monitor for Kalshi prediction market RFQ (Request for Quote) flow. Foc
 
 ## Quick Start (give this to Claude or any AI assistant)
 
-> "Set up the Kalshi RFQ Dashboard for me. Here's my Kalshi API key: `PASTE_KEY_HERE`. My private key file is at `PASTE_PATH_HERE`. Follow the steps below."
+> "Set up the Kalshi RFQ Dashboard for me. Here's my Kalshi API key: `PASTE_KEY_HERE`. I've already dropped my private key .pem file in the repo folder. Follow the steps below."
 
 ### Step-by-step setup:
 
-1. **Install Python dependencies:**
+1. **Get your Kalshi API credentials:**
+   - Log into [kalshi.com](https://kalshi.com) → Settings → API Keys
+   - Create a new API key — you'll get two things:
+     - **API key ID** (a UUID string like `466400ae-...`)
+     - **Private key file** (a `.pem` file download)
+   - Drop the `.pem` file into this repo directory
+
+2. **Install Python dependencies:**
    ```
    pip install -r requirements.txt
    ```
 
-2. **Create `config.json`** by copying `config.example.json`:
+3. **Create `config.json`** by copying `config.example.json`:
    ```
    cp config.example.json config.json
    ```
@@ -21,16 +28,12 @@ Real-time monitor for Kalshi prediction market RFQ (Request for Quote) flow. Foc
    ```json
    {
        "api_key_id": "YOUR_KALSHI_API_KEY",
-       "private_key_path": "your_private_key.pem",
+       "private_key_path": "your_downloaded_key.pem",
        "base_url": "https://api.elections.kalshi.com/trade-api/v2"
    }
    ```
-
-3. **Get your Kalshi API key + private key:**
-   - Log into [kalshi.com](https://kalshi.com) → Settings → API Keys
-   - Create a new API key — this gives you the `api_key_id`
-   - Download the RSA private key file (`.pem`) and place it in this directory
-   - Set `private_key_path` to the filename (e.g. `"my_key.pem"`) — relative paths work
+   - `api_key_id`: The UUID you got from Kalshi
+   - `private_key_path`: Just the filename of the `.pem` you dropped in (e.g. `"kalshi_key.pem"`)
 
 4. **Run the dashboard:**
    ```
