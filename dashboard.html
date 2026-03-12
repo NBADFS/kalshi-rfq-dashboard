@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalshi RFQ Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep: #f3f4f6;
+  --bg-primary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --bg-elevated: #f3f4f6;
+  --bg-input: #f9fafb;
+  --border-dim: #e5e7eb;
+  --border: #d1d5db;
+  --border-bright: #9ca3af;
+  --text-bright: #111827;
+  --text-primary: #374151;
+  --text-secondary: #6b7280;
+  --text-dim: #9ca3af;
+  --green: #059669;
+  --green-bg: rgba(5,150,105,0.08);
+  --green-border: rgba(5,150,105,0.25);
+  --blue: #2563eb;
+  --blue-bg: rgba(37,99,235,0.06);
+  --blue-border: rgba(37,99,235,0.2);
+  --amber: #b45309;
+  --amber-bg: rgba(180,83,9,0.07);
+  --amber-border: rgba(180,83,9,0.2);
+  --red: #dc2626;
+  --red-bg: rgba(220,38,38,0.06);
+  --red-border: rgba(220,38,38,0.2);
+  --purple: #7c3aed;
+  --pause-bg: rgba(220,38,38,0.08);
+  --pause-border: rgba(220,38,38,0.3);
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ────────────────────────────────────────────────────── */
+.header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-dim);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  color: var(--text-bright);
+  line-height: 1;
+}
+.logo span { color: var(--blue); }
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+.status-indicator.live {
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+}
+.status-indicator.paused {
+  color: var(--red);
+  background: var(--pause-bg);
+  border: 1px solid var(--pause-border);
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.status-indicator.live .status-dot {
+  background: var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.status-indicator.paused .status-dot {
+  background: var(--red);
+  animation: none;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── STATS BAR ─────────────────────────────────────────────────── */
+.stats-bar {
+  display: flex;
+  gap: 1px;
+  background: var(--border-dim);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-dim);
+}
+.stat-card {
+  background: var(--bg-primary);
+  padding: 8px 20px;
+  text-align: center;
+  min-width: 100px;
+}
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.stat-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+/* ── FILTERS ───────────────────────────────────────────────────── */
+.filters {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-dim);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.filter-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+select, input[type="number"], input[type="text"] {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  background: var(--bg-input);
+  color: var(--text-bright);
+  border: 1px solid var(--border-dim);
+  padding: 5px 10px;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+select { cursor: pointer; padding-right: 22px; }
+select:hover, input:hover { border-color: var(--border); }
+select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+input[type="number"] { width: 50px; text-align: center; }
+input[type="text"] { width: 150px; }
+.filter-sep {
+  width: 1px; height: 18px;
+  background: var(--border-dim);
+  margin: 0 2px;
+}
+.btn {
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg-elevated); border-color: var(--border); color: var(--text-bright); }
+.btn.active { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
+.btn-refresh {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-refresh svg { width: 12px; height: 12px; }
+.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── LAYOUT ────────────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 0;
+  min-height: calc(100vh - 120px);
+}
+.feed-container {
+  padding: 14px 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+.sidebar {
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-dim);
+  padding: 14px;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+/* ── PAUSED BANNER ─────────────────────────────────────────────── */
+.paused-banner {
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  padding: 6px 28px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--red);
+  text-align: center;
+  font-weight: 500;
+  display: none;
+}
+.paused-banner.visible { display: block; }
+
+/* ── RFQ CARDS ─────────────────────────────────────────────────── */
+.rfq-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-left: 3px solid var(--text-dim);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  margin-bottom: 6px;
+  transition: all 0.15s;
+  animation: fadeIn 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } }
+.rfq-card:hover {
+  background: var(--bg-card-hover);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.rfq-card.status-open { border-left-color: var(--green); }
+.rfq-card.status-filled { border-left-color: var(--blue); }
+.rfq-card.status-closed { border-left-color: var(--text-dim); }
+
+.rfq-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.status-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.status-badge.open {
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+}
+.status-badge.filled {
+  color: var(--blue);
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-border);
+}
+.status-badge.closed {
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+}
+.rfq-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex: 1;
+}
+.rfq-meta .target {
+  color: var(--text-bright);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.rfq-meta .legs-count { color: var(--purple); font-weight: 600; }
+.rfq-meta .time-ago { margin-left: auto; font-size: 0.68rem; color: var(--text-dim); }
+
+.rfq-legs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 6px 0;
+}
+.leg-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.leg-tag .side-yes { color: var(--green); font-weight: 700; margin-right: 2px; }
+.leg-tag .side-no { color: var(--red); font-weight: 700; margin-right: 2px; }
+
+/* ── FILL DETAILS (key visual improvement) ─────────────────────── */
+.fill-details {
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.fill-stat {
+  text-align: center;
+  padding: 4px 0;
+}
+.fill-stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.3;
+}
+.fill-stat-value.retail { color: var(--amber); }
+.fill-stat-value.mm { color: var(--red); }
+.fill-stat-value.mult { color: var(--blue); }
+.fill-stat-label {
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* ── SIDEBAR ───────────────────────────────────────────────────── */
+.sidebar-section {
+  margin-bottom: 20px;
+}
+.sidebar-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+}
+.player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+.player-name {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+}
+.player-count {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.leg-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+}
+.leg-bar-label { color: var(--text-secondary); width: 24px; text-align: right; }
+.leg-bar-fill {
+  height: 12px;
+  background: linear-gradient(90deg, #93c5fd, #bfdbfe);
+  border-radius: 2px;
+  min-width: 2px;
+  transition: width 0.5s ease;
+}
+.leg-bar-count { color: var(--text-dim); font-size: 0.62rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+.loading::after {
+  content: '';
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--border-dim);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.feed-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+/* ── TRACKER MODAL ─────────────────────────────────────────────── */
+.tracker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.tracker-overlay.visible { display: flex; }
+.tracker-panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+}
+.tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-dim);
+}
+.tracker-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  color: var(--text-bright);
+}
+.tracker-close {
+  width: 28px; height: 28px;
+  border: none;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.tracker-close:hover { background: var(--border-dim); color: var(--text-bright); }
+.tracker-body { padding: 16px 20px 20px; }
+.tracker-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tracker-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: flex; gap: 14px; align-items: center;
+}
+.tracker-meta .target {
+  font-weight: 700; font-size: 0.9rem; color: var(--text-bright);
+}
+.tracker-meta .legs-count { color: var(--purple); font-weight: 600; }
+.tracker-legs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 12px 0;
+}
+.tracker-legs .leg-tag {
+  font-size: 0.82rem;
+  padding: 4px 10px;
+}
+.tracker-watching-bar {
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-top: 14px;
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--amber);
+}
+.tracker-watching-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--amber);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.tracker-fill-reveal {
+  animation: fillReveal 0.5s ease;
+}
+@keyframes fillReveal {
+  from { opacity: 0; transform: translateY(10px); }
+}
+.tracker-fill-details {
+  margin-top: 14px;
+}
+.tracker-fill-details .fill-details {
+  border-width: 2px;
+  padding: 14px 18px;
+}
+.tracker-elapsed {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 10px;
+  text-align: center;
+}
+.tracker-expired {
+  color: var(--text-dim);
+  border-color: var(--border-dim);
+  background: var(--bg-elevated);
+}
+.rfq-card.clickable { cursor: pointer; }
+.rfq-card.clickable:hover { border-left-width: 4px; }
+
+/* ── SCROLLBAR ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .stats-bar { flex-wrap: wrap; }
+  .header { flex-direction: column; align-items: flex-start; }
+  .fill-details { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">KALSHI <span>RFQ</span> MONITOR</div>
+    <div class="status-indicator live" id="statusIndicator" onclick="togglePause()" title="Click to pause/resume auto-refresh">
+      <div class="status-dot"></div>
+      <span id="statusText">LIVE</span>
+    </div>
+  </div>
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+      <div class="stat-value" id="statOpen">--</div>
+      <div class="stat-label">Open RFQs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statNba">--</div>
+      <div class="stat-label">NBA Props</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statVol">--</div>
+      <div class="stat-label">Volume</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statLegs">--</div>
+      <div class="stat-label">Avg Legs</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSED BANNER -->
+<div class="paused-banner" id="pausedBanner">Auto-refresh paused — use Refresh button for new data, or press Space to resume live updates</div>
+
+<!-- FILTERS ROW 1 -->
+<div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Market</span>
+    <select id="filterMarket">
+      <option value="all">All Markets</option>
+      <option value="nba_all" selected>All NBA</option>
+      <option value="nba_props">NBA Props Only</option>
+      <option value="nba_game">NBA Game Lines</option>
+    </select>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Legs</span>
+    <input type="number" id="filterMinLegs" value="1" min="1" max="50">
+    <span style="color:var(--text-dim);font-size:0.7rem">to</span>
+    <input type="number" id="filterMaxLegs" value="50" min="1" max="50">
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Min $</span>
+    <input type="number" id="filterMinDollars" value="0" min="0" max="10000" step="1" style="width:60px">
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <button class="btn active" data-status="all" onclick="setStatus(this)">All</button>
+    <button class="btn" data-status="open" onclick="setStatus(this)">Live</button>
+    <button class="btn" data-status="filled" onclick="setStatus(this)">Filled</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Sort</span>
+    <select id="filterSort">
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option>
+      <option value="legs_desc">Most Legs</option>
+      <option value="legs_asc">Fewest Legs</option>
+      <option value="dollar_desc">Highest $</option>
+      <option value="dollar_asc">Lowest $</option>
+      <option value="mult_desc">Highest Mult</option>
+    </select>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Player</span>
+    <input type="text" id="filterSearch" placeholder="Search...">
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-group">
+    <button class="btn" id="btnDedup" onclick="toggleDedup()">1 per User</button>
+  </div>
+  <button class="btn btn-refresh" id="btnRefresh" onclick="manualRefresh()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <path d="M1 4v6h6M23 20v-6h-6"/>
+      <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+    </svg>
+    Refresh
+  </button>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+  <div class="feed-container" id="feedContainer">
+    <div class="loading" id="loadingMsg">Loading RFQ feed</div>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Top Players</div>
+      <div id="topPlayers"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Leg Distribution</div>
+      <div id="legDist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TRACKER MODAL -->
+<div class="tracker-overlay" id="trackerModal" onclick="if(event.target===this)closeTracker()">
+  <div class="tracker-panel">
+    <div class="tracker-header">
+      <div class="tracker-title">RFQ TRACKER</div>
+      <button class="tracker-close" onclick="closeTracker()">&times;</button>
+    </div>
+    <div class="tracker-body" id="trackerBody"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────
+let paused = false;
+let refreshTimer = null;
+let currentStatus = 'all';
+let dedup = false;
+
+// ── PAUSE / RESUME ────────────────────────────────────────────────
+function setPaused(val) {
+  paused = val;
+  const ind = document.getElementById('statusIndicator');
+  const txt = document.getElementById('statusText');
+  const banner = document.getElementById('pausedBanner');
+  if (paused) {
+    ind.className = 'status-indicator paused';
+    txt.textContent = 'PAUSED';
+    banner.classList.add('visible');
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  } else {
+    ind.className = 'status-indicator live';
+    txt.textContent = 'LIVE';
+    banner.classList.remove('visible');
+    startAutoRefresh();
+  }
+}
+
+function togglePause() {
+  setPaused(!paused);
+  if (!paused) fetchAll();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' && trackingId) {
+    closeTracker();
+    return;
+  }
+  if (e.code === 'Space' && e.target === document.body && !trackingId) {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+// ── FILTERS ────────────────────────────────────────────────────────
+function setStatus(btn) {
+  document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatus = btn.dataset.status;
+  // Auto-pause on Filled tab so user can browse without churn
+  if (currentStatus === 'filled') {
+    setPaused(true);
+  } else if (paused && currentStatus !== 'filled') {
+    setPaused(false);
+  }
+  fetchFeed();
+}
+
+function toggleDedup() {
+  dedup = !dedup;
+  document.getElementById('btnDedup').classList.toggle('active', dedup);
+  fetchFeed();
+}
+
+function getFilters() {
+  return {
+    market: document.getElementById('filterMarket').value,
+    min_legs: document.getElementById('filterMinLegs').value,
+    max_legs: document.getElementById('filterMaxLegs').value,
+    status: currentStatus,
+    search: document.getElementById('filterSearch').value,
+    dedup: dedup ? '1' : '0',
+    limit: '200',
+  };
+}
+
+function getMinDollars() {
+  return parseFloat(document.getElementById('filterMinDollars').value) || 0;
+}
+
+function getSortKey() {
+  return document.getElementById('filterSort').value;
+}
+
+function sortAndFilter(rfqs) {
+  const minD = getMinDollars();
+  let filtered = rfqs;
+  if (minD > 0) {
+    filtered = filtered.filter(r => r.target >= minD);
+  }
+  const key = getSortKey();
+  const sorted = [...filtered];
+  switch (key) {
+    case 'newest': sorted.sort((a,b) => (b.created_ts || '').localeCompare(a.created_ts || '')); break;
+    case 'oldest': sorted.sort((a,b) => (a.created_ts || '').localeCompare(b.created_ts || '')); break;
+    case 'legs_desc': sorted.sort((a,b) => b.num_legs - a.num_legs); break;
+    case 'legs_asc': sorted.sort((a,b) => a.num_legs - b.num_legs); break;
+    case 'dollar_desc': sorted.sort((a,b) => b.target - a.target); break;
+    case 'dollar_asc': sorted.sort((a,b) => a.target - b.target); break;
+    case 'mult_desc': sorted.sort((a,b) => ((b.fill||{}).multiplier||0) - ((a.fill||{}).multiplier||0)); break;
+  }
+  return sorted;
+}
+
+// ── TIME AGO ───────────────────────────────────────────────────────
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = (Date.now() - new Date(ts).getTime()) / 1000;
+  if (diff < 5) return 'just now';
+  if (diff < 60) return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// ── FORMAT ─────────────────────────────────────────────────────────
+function fmtDollar(n) {
+  if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'k';
+  if (n >= 100) return '$' + n.toFixed(0);
+  return '$' + n.toFixed(2);
+}
+
+function fmtCents(dollarPrice) {
+  const c = dollarPrice * 100;
+  if (c >= 1 && c === Math.floor(c)) return c + 'c';
+  return c.toFixed(1) + 'c';
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────
+function renderCard(rfq) {
+  const statusClass = rfq.status === 'open' ? 'open' : rfq.status === 'filled' ? 'filled' : 'closed';
+  const statusLabel = rfq.status === 'open' ? 'LIVE' : rfq.status === 'filled' ? 'FILLED' : 'CLOSED';
+
+  let legsHtml = rfq.legs.map(l => {
+    const sideClass = l.side === 'yes' ? 'side-yes' : 'side-no';
+    const sideLabel = l.side === 'yes' ? 'Y' : 'N';
+    return '<span class="leg-tag"><span class="' + sideClass + '">' + sideLabel + '</span>' + escHtml(l.desc) + '</span>';
+  }).join('');
+
+  let fillHtml = '';
+  if (rfq.fill) {
+    const f = rfq.fill;
+    fillHtml = '<div class="fill-details">' +
+      '<div class="fill-stat"><div class="fill-stat-value">' + fmtCents(f.yes_price) + '</div><div class="fill-stat-label">Yes Price</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value">' + f.contracts.toLocaleString() + '</div><div class="fill-stat-label">Contracts</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value retail">' + fmtDollar(f.retail_cost) + '</div><div class="fill-stat-label">User Bet</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value mm">' + fmtDollar(f.mm_exposure) + '</div><div class="fill-stat-label">MM Exposure</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value mult">' + f.multiplier.toFixed(1) + 'x</div><div class="fill-stat-label">Multiplier</div></div>' +
+      '</div>';
+  }
+
+  const targetStr = rfq.target > 0 ? fmtDollar(rfq.target) : '--';
+
+  return '<div class="rfq-card status-' + statusClass + ' clickable" onclick="openTracker(\'' + rfq.id + '\')">' +
+    '<div class="rfq-header">' +
+      '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+      '<div class="rfq-meta">' +
+        '<span class="target">' + targetStr + '</span>' +
+        '<span class="legs-count">' + rfq.num_legs + ' legs</span>' +
+        '<span class="time-ago">' + timeAgo(rfq.created_ts) + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="rfq-legs">' + legsHtml + '</div>' +
+    fillHtml +
+  '</div>';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Store last fetched data so we can re-sort without refetching
+let lastFeedData = [];
+
+function renderFeed(rfqs) {
+  lastFeedData = rfqs;
+  renderFeedFromCache();
+}
+
+function renderFeedFromCache() {
+  const container = document.getElementById('feedContainer');
+  const sorted = sortAndFilter(lastFeedData);
+  if (!sorted.length) {
+    container.innerHTML = '<div class="empty-state">No RFQs match your filters</div>';
+    return;
+  }
+  const countHtml = '<div class="feed-count">' + sorted.length + ' RFQs</div>';
+  container.innerHTML = countHtml + sorted.map(renderCard).join('');
+}
+
+function renderStats(stats) {
+  document.getElementById('statOpen').textContent = stats.total_open.toLocaleString();
+  document.getElementById('statNba').textContent = stats.nba_open.toLocaleString();
+  document.getElementById('statVol').textContent = '$' + stats.total_volume.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  document.getElementById('statLegs').textContent = stats.avg_legs.toFixed(1);
+
+  const pp = document.getElementById('topPlayers');
+  if (stats.top_players && stats.top_players.length) {
+    pp.innerHTML = stats.top_players.map(p =>
+      '<div class="player-row"><span class="player-name">' + escHtml(p.name) + '</span><span class="player-count">' + p.count + '</span></div>'
+    ).join('');
+  }
+
+  const ld = document.getElementById('legDist');
+  if (stats.leg_distribution && stats.leg_distribution.length) {
+    const maxCount = Math.max(...stats.leg_distribution.map(d => d.count));
+    ld.innerHTML = stats.leg_distribution.slice(0, 15).map(d => {
+      const pct = (d.count / maxCount * 100).toFixed(0);
+      return '<div class="leg-bar">' +
+        '<span class="leg-bar-label">' + d.legs + '</span>' +
+        '<div class="leg-bar-fill" style="width:' + pct + '%"></div>' +
+        '<span class="leg-bar-count">' + d.count + '</span></div>';
+    }).join('');
+  }
+}
+
+// ── RFQ TRACKER ──────────────────────────────────────────────────
+let trackingId = null;
+let trackingTimer = null;
+let trackingElapsedTimer = null;
+let trackingStartTime = null;
+let trackerPrevStatus = null;
+
+function openTracker(rfqId) {
+  trackingId = rfqId;
+  trackingStartTime = Date.now();
+  trackerPrevStatus = null;
+  document.getElementById('trackerModal').classList.add('visible');
+  const rfq = lastFeedData.find(r => r.id === rfqId);
+  if (rfq) {
+    trackerPrevStatus = rfq.status;
+    renderTrackerContent(rfq);
+  } else {
+    document.getElementById('trackerBody').innerHTML = '<div class="loading">Loading RFQ</div>';
+  }
+  startTrackerPolling();
+  trackingElapsedTimer = setInterval(updateTrackerElapsed, 1000);
+}
+
+function closeTracker() {
+  trackingId = null;
+  trackingStartTime = null;
+  if (trackingTimer) { clearInterval(trackingTimer); trackingTimer = null; }
+  if (trackingElapsedTimer) { clearInterval(trackingElapsedTimer); trackingElapsedTimer = null; }
+  document.getElementById('trackerModal').classList.remove('visible');
+}
+
+function startTrackerPolling() {
+  if (trackingTimer) clearInterval(trackingTimer);
+  trackingTimer = setInterval(pollTracker, 3000);
+  pollTracker();
+}
+
+async function pollTracker() {
+  if (!trackingId) return;
+  try {
+    const res = await fetch('/api/rfq?id=' + encodeURIComponent(trackingId));
+    const data = await res.json();
+    if (data && !data.error) {
+      if (trackerPrevStatus === 'open' && data.status !== 'open') {
+        clearInterval(trackingTimer);
+        trackingTimer = null;
+      }
+      trackerPrevStatus = data.status;
+      renderTrackerContent(data);
+    } else if (data && data.error === 'not_found') {
+      const body = document.getElementById('trackerBody');
+      body.innerHTML += '<div class="tracker-watching-bar tracker-expired">RFQ no longer found — may have expired or been cancelled</div>';
+      clearInterval(trackingTimer);
+      trackingTimer = null;
+    }
+  } catch (e) {
+    console.error('Tracker poll error:', e);
+  }
+}
+
+function updateTrackerElapsed() {
+  const el = document.getElementById('trackerElapsed');
+  if (!el || !trackingStartTime) return;
+  const secs = Math.floor((Date.now() - trackingStartTime) / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  el.textContent = 'Tracking: ' + (m > 0 ? m + 'm ' : '') + s + 's';
+}
+
+function renderTrackerContent(rfq) {
+  const body = document.getElementById('trackerBody');
+  const statusClass = rfq.status === 'open' ? 'open' : rfq.status === 'filled' ? 'filled' : 'closed';
+  const statusLabel = rfq.status === 'open' ? 'LIVE' : rfq.status === 'filled' ? 'FILLED' : 'CLOSED';
+  const targetStr = rfq.target > 0 ? fmtDollar(rfq.target) : '--';
+
+  let legsHtml = rfq.legs.map(l => {
+    const sideClass = l.side === 'yes' ? 'side-yes' : 'side-no';
+    const sideLabel = l.side === 'yes' ? 'Y' : 'N';
+    return '<span class="leg-tag"><span class="' + sideClass + '">' + sideLabel + '</span>' + escHtml(l.desc) + '</span>';
+  }).join('');
+
+  let watchHtml = '';
+  if (rfq.status === 'open') {
+    watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Watching for fill...</div>';
+  }
+
+  let fillHtml = '';
+  if (rfq.fill) {
+    const f = rfq.fill;
+    fillHtml = '<div class="tracker-fill-details tracker-fill-reveal">' +
+      '<div class="fill-details">' +
+      '<div class="fill-stat"><div class="fill-stat-value">' + fmtCents(f.yes_price) + '</div><div class="fill-stat-label">Yes Price</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value">' + f.contracts.toLocaleString() + '</div><div class="fill-stat-label">Contracts</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value retail">' + fmtDollar(f.retail_cost) + '</div><div class="fill-stat-label">User Bet</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value mm">' + fmtDollar(f.mm_exposure) + '</div><div class="fill-stat-label">MM Exposure</div></div>' +
+      '<div class="fill-stat"><div class="fill-stat-value mult">' + f.multiplier.toFixed(1) + 'x</div><div class="fill-stat-label">Multiplier</div></div>' +
+      '</div></div>';
+  }
+
+  body.innerHTML =
+    '<div class="tracker-status-row">' +
+      '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+      '<div class="tracker-meta">' +
+        '<span class="target">' + targetStr + '</span>' +
+        '<span class="legs-count">' + rfq.num_legs + ' legs</span>' +
+        '<span style="color:var(--text-dim);font-size:0.68rem">' + timeAgo(rfq.created_ts) + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tracker-legs">' + legsHtml + '</div>' +
+    watchHtml +
+    fillHtml +
+    '<div class="tracker-elapsed" id="trackerElapsed"></div>';
+}
+
+// ── FETCH ──────────────────────────────────────────────────────────
+async function fetchFeed() {
+  const f = getFilters();
+  const qs = Object.entries(f).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+  try {
+    const res = await fetch('/api/feed?' + qs);
+    const data = await res.json();
+    renderFeed(Array.isArray(data) ? data : (data.rfqs || []));
+  } catch (e) {
+    console.error('Feed fetch error:', e);
+  }
+}
+
+async function fetchStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    renderStats(data);
+  } catch (e) {
+    console.error('Stats fetch error:', e);
+  }
+}
+
+async function fetchAll() {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spin');
+  document.getElementById('loadingMsg')?.remove();
+  await Promise.all([fetchFeed(), fetchStats()]);
+  setTimeout(() => btn.classList.remove('spin'), 400);
+}
+
+function manualRefresh() {
+  fetchAll();
+}
+
+// ── AUTO-REFRESH ───────────────────────────────────────────────────
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    if (!paused) fetchAll();
+  }, 8000);
+}
+
+// ── FILTER LISTENERS ───────────────────────────────────────────────
+document.getElementById('filterMarket').addEventListener('change', fetchFeed);
+document.getElementById('filterMinLegs').addEventListener('change', fetchFeed);
+document.getElementById('filterMaxLegs').addEventListener('change', fetchFeed);
+document.getElementById('filterMinDollars').addEventListener('change', renderFeedFromCache);
+document.getElementById('filterSort').addEventListener('change', renderFeedFromCache);
+let searchTimeout;
+document.getElementById('filterSearch').addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(fetchFeed, 300);
+});
+
+// ── INIT ───────────────────────────────────────────────────────────
+fetchAll();
+startAutoRefresh();
+</script>
+</body>
+</html>
