@@ -238,19 +238,24 @@ def process_rfq(r, status):
         if trade:
             yp = float(trade.get("yes_price_dollars", "0") or "0")
             np_ = float(trade.get("no_price_dollars", "0") or "0")
+            trade_count = int(trade.get("count", 0) or 0)
             entry["status"] = "filled"
-            # Use RFQ target as user bet, derive contracts from trade price
+            # Use RFQ target when available (trade count may be from a different RFQ on same MVE)
             if yp > 0 and target > 0:
-                est_contracts = int(round(target / yp))
-                mm_exp = round(est_contracts * np_, 2)
+                contracts = int(round(target / yp))
+                retail_cost = round(target, 2)
+            elif trade_count > 0:
+                contracts = trade_count
+                retail_cost = round(trade_count * yp, 2)
             else:
-                est_contracts = 0
-                mm_exp = 0.0
+                contracts = 0
+                retail_cost = 0.0
+            mm_exp = round(contracts * np_, 2)
             entry["fill"] = {
                 "yes_price": yp,
                 "no_price": np_,
-                "contracts": est_contracts,
-                "retail_cost": round(target, 2),
+                "contracts": contracts,
+                "retail_cost": retail_cost,
                 "mm_exposure": mm_exp,
                 "multiplier": round(1 / yp, 1) if yp > 0 else 0,
             }
