@@ -1023,7 +1023,7 @@ function renderTrackerContent(rfq) {
     watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Watching for fill...</div>';
   } else if (rfq.status === 'closed' && !rfq.fill) {
     if (trackerClosedSince && Date.now() - trackerClosedSince > 15000) {
-      watchHtml = '<div class="tracker-watching-bar tracker-expired">No fill — RFQ expired or was cancelled</div>';
+      watchHtml = '<div class="tracker-watching-bar tracker-expired">No fill found — user may not have accepted the quote</div>';
     } else {
       watchHtml = '<div class="tracker-watching-bar"><div class="tracker-watching-dot"></div>Closed — waiting for fill data...</div>';
     }
